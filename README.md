@@ -1,6 +1,6 @@
 # Noble Node Deployment with Cosigner using Horcrux
 
-This repository contains an Ansible-based deployment setup for a Noble Node and Cosigner using Horcrux. The structure ensures efficient configuration and management for full nodes and cosigner nodes in a blockchain setup.
+This repository provides an Ansible-based deployment setup for a Noble Node and Cosigner using Horcrux. It facilitates efficient configuration and management for full nodes and cosigner nodes in a blockchain environment.
 
 ## Project Structure
 
@@ -64,7 +64,7 @@ Update the `hosts.ini` files in both `cosigner` and `fullnode` directories to ma
 
 ### 3. Deploy Cosigner
 
-Navigate to the `cosigner` directory and run the Ansible playbook:
+Navigate to the `cosigner` directory and run the Ansible playbooks:
 
 ```bash
 cd cosigner
@@ -91,34 +91,74 @@ ansible-playbook -i hosts.ini full_node_cp.yml
 
 Once the full node synchronization is complete, follow these steps to configure the validator:
 
-1. **Copy Validator Configuration**:
-   Ensure `validator.json` is properly configured with your validator details.
+#### Step 1: Ensure Full Node Synchronization
 
-2. **Submit a Create Validator Transaction**:
-   Use the blockchain CLI to submit a `create-validator` transaction. Example:
+- Use the following command to check if the full node has fully synchronized:
+  ```bash
+  noble status | jq
+  ```
+- Confirm that the `catching_up` field is `false` in the output.
 
-   ```bash
-   noble tx staking create-validator \
-     --amount=<stake_amount> \
-     --pubkey=$(noble tendermint show-validator) \
-     --moniker=<validator_name> \
-     --chain-id=<chain_id> \
-     --from=<key_name>
-   ```
+#### Step 2: Create Validator
 
-3. **Verify Validator Status**:
-   Check the status of your validator:
+- ```bash
+  nobled keys add <wallet_name>
+  ```
 
-   ```bash
-   noble query staking validator <validator_address>
-   ```
+#### Step 3: Generate and Retrieve Validator Address
 
-4. **Monitor Logs**:
-   Keep track of validator and node logs to ensure smooth operation:
+- Create a wallet and retrieve your validator address using the following command:
+  ```bash
+  nobled keys show <wallet_name>
+  ```
+- Replace `<wallet_name>` with your desired wallet name. The output will display the validator’s address, public key, and additional details:
+  ```plaintext
+  - address: noble1xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+    name: <wallet_name>
+    pubkey: '{"@type":"/cosmos.crypto.secp256k1.PubKey","key":"AnXXXXXXXXXXXXXXXXXXXXXX"}'
+    type: local
+  ```
+- Note the `address` for future steps.
 
-   ```bash
-   docker logs -f <container_name>
-   ```
+#### Step 4: Add Funds to Wallet
+
+- Use the Noble Faucet to add funds to your wallet:
+  ```bash
+  Visit https://faucet.circle.com/ and submit your wallet address.
+  ```
+
+#### Step 5: Submit a Create Validator Transaction
+
+- Update the `pubkey` and `moniker` in `fullnode/validator.json` with the appropriate values from your setup.
+- Use the blockchain CLI to create your validator:
+  ```bash
+  nobled tx staking create-validator /noble/validator.json --from <validator_address> --chain-id grand-1
+  ```
+- Replace `<validator_address>` with your address.
+
+#### Step 6: Configure Validator to Use Cosigner
+
+- Update the `horcrux` configuration to point to your validator.
+- Ensure communication between the cosigner and validator is secured using mTLS.
+- Verify the cosigner setup by checking logs:
+  ```bash
+  docker logs -f <cosigner_container_name>
+  ```
+
+#### Step 7: Verify Validator Status
+
+- Check the status of your validator:
+  ```bash
+  noble query staking validator <validator_address>
+  ```
+- Replace `<validator_address>` with your validator’s address.
+
+#### Step 8: Monitor Logs
+
+- Ensure smooth operation by monitoring validator and node logs:
+  ```bash
+  docker logs -f <container_name>
+  ```
 
 ## Monitoring and Alerting
 
@@ -167,8 +207,3 @@ Once the full node synchronization is complete, follow these steps to configure 
 
 - Refer to the `cosigner/README.md` for detailed cosigner configuration.
 - Refer to `validator.json` for full node validator setup.
-
-
-## License
-
-This project is licensed under the [MIT License](LICENSE).
