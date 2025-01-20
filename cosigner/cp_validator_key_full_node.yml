@@ -1,0 +1,10 @@
+- name: Copy key file from Local Machine to Signer Node
+  hosts: all  # Run the task on the local machine
+  become: true
+  tasks:
+    - name: Copy priv_validator_key.json to Signer Node
+      copy:
+        src: /home/deq/Desktop/Horcrux/config/priv_validator_key.json  # Path on the local machine
+        dest: /home/Desktop/Horcrux/config/priv_validator_key.json  # Destination on the signer node
+        mode: '0644'
+      delegate_to: signer  # Delegate the task to the signer node
