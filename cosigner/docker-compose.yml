@@ -1,0 +1,66 @@
+version: '3.8'
+
+networks:
+  horcrux_network:
+    driver: bridge
+
+services:
+  cosigner_1:
+    build: /home/deq/Desktop/Horcrux
+    container_name: cosigner_1
+    volumes:
+      - /home/deq/Desktop/Horcrux/shards/cosigner_1:/root/.horcrux  
+    ports:
+      - "12341:12341" 
+    command: start 
+    restart: unless-stopped 
+    networks:
+      - horcrux_network  
+
+  cosigner_2:
+    build: /home/deq/Desktop/Horcrux
+    container_name: cosigner_2
+    volumes:
+      - /home/deq/Desktop/Horcrux/shards/cosigner_2:/root/.horcrux
+    ports:
+      - "12342:12342" 
+    command: start
+    restart: unless-stopped
+    networks:
+      - horcrux_network
+
+  cosigner_3:
+    build: /home/deq/Desktop/Horcrux
+    container_name: cosigner_3
+    volumes:
+      - /home/deq/Desktop/Horcrux/shards/cosigner_3:/root/.horcrux
+    ports:
+      - "12343:12343"
+    command: start
+    restart: unless-stopped
+    networks:
+      - horcrux_network
+
+  cosigner_4:
+    build: /home/deq/Desktop/Horcrux
+    container_name: cosigner_4
+    volumes:
+      - /home/deq/Desktop/Horcrux/shards/cosigner_4:/root/.horcrux
+    ports:
+      - "12344:12344"
+    command: start
+    restart: unless-stopped
+    networks:
+      - horcrux_network
+
+  cosigner_5:
+    build: /home/deq/Desktop/Horcrux
+    container_name: cosigner_5
+    volumes:
+      - /home/deq/Desktop/Horcrux/shards/cosigner_5:/root/.horcrux
+    ports:
+      - "12345:12345"
+    command: start
+    restart: unless-stopped
+    networks:
+      - horcrux_network
