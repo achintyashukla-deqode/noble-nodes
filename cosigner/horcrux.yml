@@ -1,0 +1,74 @@
+---
+- name: Setup Horcrux and Split Validator Key
+  hosts: all
+  become: true
+  vars:
+    horcrux_url: "https://api.github.com/repos/jesseduffield/horcrux/releases/latest"
+    validator_key_path: "/tmp/validator.key"
+    horcrux_dir: "/usr/local/bin"
+    split_threshold: 3
+    num_cosigners: 5
+  tasks:
+    - name: Install dependencies (jq and curl)
+      apt:
+        name:
+          - jq
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Download and install Horcrux
+      shell: |
+        curl -s "{{ horcrux_url }}" | \
+        jq -r '.assets[] | select(.browser_download_url | endswith("_Linux_x86_64.tar.gz")) | .browser_download_url' | \
+        xargs curl -Lo /tmp/horcrux.tar.gz && \
+        tar xfz /tmp/horcrux.tar.gz -C /tmp && \
+        rm /tmp/horcrux.tar.gz && \
+        mv /tmp/horcrux "{{ horcrux_dir }}"
+      args:
+        creates: "{{ horcrux_dir }}/horcrux"
+      notify:
+        - Ensure horcrux is executable
+
+    - name: Ensure Horcrux is executable
+      file:
+        path: "{{ horcrux_dir }}/horcrux"
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Copy Validator Key to Co-Signer
+      copy:
+        src: "{{ validator_key_path }}"
+        dest: /tmp/validator.key
+        mode: '0600'
+
+    - name: Change permissions of the validator key
+      file:
+        path: /tmp/validator.key
+        owner: "{{ ansible_user | default('root') }}"
+        group: "{{ ansible_group | default('root') }}"
+        mode: '0644'
+
+    - name: Split the Validator Key
+      shell: |
+        cd /tmp && \
+         horcrux -t 3 -n 5 split validator.key
+      args:
+        chdir: /tmp
+      register: split_output
+      failed_when: "'usage:' in split_output.stderr or split_output.rc != 0"
+
+    - name: Distribute Key Fragments
+      fetch:
+        src: "/tmp/validator_{{ item }}_of_{{ num_cosigners }}.horcrux"
+        dest: "./fragments/"
+      with_sequence: start=1 end="{{ num_cosigners }}"
+
+  handlers:
+    - name: Ensure horcrux is executable
+      file:
+        path: "{{ horcrux_dir }}/horcrux"
+        mode: '0755'
+        owner: root
+        group: root

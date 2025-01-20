@@ -1,0 +1,9 @@
+{
+	"pubkey": {"@type":"/cosmos.crypto.secp256k1.PubKey","key":"A+B68IIOvSwCpdrKQZ6UPK0tRUdXlcLhHfpgttL8Mn+w"},
+	"amount": "1000000stake",
+	"moniker": "deq-noble-test",
+	"commission-rate": "0.1",
+	"commission-max-rate": "0.2",
+	"commission-max-change-rate": "0.01",
+	"min-self-delegation": "1"
+}

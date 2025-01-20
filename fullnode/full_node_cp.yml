@@ -1,0 +1,10 @@
+---
+- name: Copy full node directory to the target VM
+  hosts: validator_noble
+  become: yes
+  tasks:
+    - name: Copy directory to remote host
+      copy:
+        src: fullnode
+        dest: /home/deq/Desktop/
+        # remote_src: yes

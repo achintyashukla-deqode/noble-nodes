@@ -1,0 +1,19 @@
+# docker-compose.yml
+services:
+  noble-node:
+    build: .
+    container_name: full-node
+    volumes:
+      - noble-data:/root/.noble
+    ports:
+      - "26656:26656"  # P2P
+      - "26657:26657"  # RPC
+      - "1317:1317"    # REST API
+      - "9090:9090"    # gRPC
+      # - "192.168.10.232:26657:26657"  # RPC
+    restart: unless-stopped
+    environment:
+      - MONIKER=deq-noble-test
+
+volumes:
+  noble-data:
