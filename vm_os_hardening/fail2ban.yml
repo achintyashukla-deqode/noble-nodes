@@ -1,0 +1,29 @@
+- name: Configure fail2ban to protect your SSH service from brute force attacks
+  hosts: all
+  become: yes
+  tasks:
+    - name: Install Fail2Ban package if not already installed
+      apt:
+        name: fail2ban
+        state: present
+        update_cache: yes
+    - name: Ensure Fail2Ban service is started
+      service:
+        name: fail2ban
+        state: started
+        enabled: yes
+    - name: Configure Fail2Ban for SSH
+      copy:
+        dest: /etc/fail2ban/jail.d/sshd.local
+        content: |
+          [sshd]
+          enabled = true
+          port = 5555
+          logpath = /var/log/auth.log
+          maxretry = 3
+          bantime = 600
+          findtime = 600
+    - name: Restart Fail2Ban service
+      service:
+        name: fail2ban
+        state: restarted

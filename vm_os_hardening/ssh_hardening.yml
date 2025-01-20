@@ -1,0 +1,107 @@
+- name: SSH Hardening configuration
+  hosts: all
+  become: yes
+  tasks:
+    - name: Create the new user #new user creation
+      user:
+        name: newuser
+        state: present
+        shell: /bin/bash
+        password: "{{ 'test@123' | password_hash('sha512') }}"
+    - name: Ensure the new user cannot SSH as root # new user should not ssh as root
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "^AllowUsers"
+        line: "AllowUsers newuser"
+        state: present
+        backup: yes
+    - name: Ensure the new user is not in the sudoers group (or equivalent) #new user should not be in sudoers group
+      user:
+        name: newuser
+        groups: ""
+        append: no
+    - name: Disable root SSH login #disabling root ssh login only key based login
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^PermitRootLogin'
+        line: 'PermitRootLogin no'
+        state: present
+    - name: Disable password authentication in SSH #user should not be able to login using username and password
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PasswordAuthentication'
+        line: 'PasswordAuthentication no'
+        state: present
+        backup: yes
+    - name: Ensure SSH key-based authentication is enabled #ssh key based authentication is enabled so that user should only be able to login via ssh key based auth
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?PubkeyAuthentication'
+        line: 'PubkeyAuthentication yes'
+        state: present
+        backup: yes
+    - name: Change the default SSH port to 5555 in sshd_config #the default ssh port should not be 22 
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Port'
+        line: 'Port 5555'
+        state: present
+    - name: Allow SSH port 5555 in the firewall #allowing the updated ssh port in the firewall
+      ansible.builtin.ufw:
+        rule: allow
+        port: 5555
+        proto: tcp
+        state: enabled
+    - name: Allow specific users to SSH #allowing specific users to ssh
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^AllowUsers'
+        line: 'AllowUsers deq newuser'
+        state: present
+        backup: yes
+    - name: Allow specific groups to SSH
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^AllowGroups'
+        line: 'AllowGroups sshusers newuser'
+        state: present
+        backup: yes
+    - name: Set SSH Login Grace Time # This sets the login grace time to 30 seconds, adjust as necessary
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?LoginGraceTime'
+        line: 'LoginGraceTime 30'
+        state: present
+    - name: Set SSH Client Alive Interval # This sends a keep-alive message every 60 seconds
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?ClientAliveInterval'
+        line: 'ClientAliveInterval 60'
+        state: present
+    - name: Set SSH Client Alive Count Max # This will disconnect the client after 3 missed keep-alive messages
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?ClientAliveCountMax'
+        line: 'ClientAliveCountMax 3'
+        state: present
+    - name: Set SSH Banner
+      copy:
+        dest: /etc/ssh/sshd_banner
+        content: |
+          **************************************************
+          WARNING: Unauthorized access is prohibited.
+          All actions on this system are monitored and logged.
+          **************************************************
+      notify:
+        - Restart SSH service
+    - name: Enable SSH Banner in sshd_config
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: '^#?Banner'
+        line: 'Banner /etc/ssh/sshd_banner'
+        state: present
+  handlers:
+    - name: Restart SSH service
+      service:
+        name: sshd
+        state: restarted
